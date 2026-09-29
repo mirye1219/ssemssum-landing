@@ -2,7 +2,7 @@
 
 > 선생님이 쓰는 보육비서, 쌤씀. 사진이나 메모로 기록을 시작하고, 알림장→관찰일지, 보육일지→주제계획안까지 초안을 이어 만드는 서비스를 소개하는 원페이지 랜딩입니다.
 
-- 배포 URL: _(Vercel 배포 후 기입)_
+- 배포 URL: https://ssemssum-landing.vercel.app
 - 기준 문서: `SSEMSSUM_LANDING_DESIGN_SYSTEM.md` v1.3
 - 디자인 원본: 쌤씀 2026 프로토타입 Figma (Figma MCP로 Hi-fi 화면을 가져와 코드 컴포넌트로 재현)
 

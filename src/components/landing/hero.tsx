@@ -38,8 +38,8 @@ export function Hero() {
           <p className="text-small mt-5 text-ink-600">가입 없이 바로 체험 화면을 열어볼 수 있어요.</p>
         </div>
 
-        <div className="relative lg:col-span-7 lg:-mr-[max(40px,calc((100vw-1200px)/2))]">
-          <TodayRecordScreen className="min-h-[380px] lg:min-h-[500px] lg:rounded-r-none" />
+        <div className="relative min-w-0 lg:col-span-7">
+          <TodayRecordScreen className="min-h-[380px] lg:min-h-[500px]" />
           <div className="absolute -bottom-6 left-4 flex items-center gap-2 rounded-2xl border border-border-default bg-surface-base py-2 pr-4 pl-2 shadow-[0_10px_30px_rgba(31,24,48,0.10)] md:left-[200px] lg:-bottom-8">
             <Ppobo state="happy" size={44} />
             <p className="text-[13px] leading-snug font-semibold text-ink-900">

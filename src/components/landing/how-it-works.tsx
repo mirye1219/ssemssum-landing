@@ -1,11 +1,10 @@
 "use client";
 
-import { ArrowDown } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { ChildSelectScreen, EditInputScreen, NoticeScreen, TodayRecordScreen } from "@/components/product/screens";
 import { SECTION_IDS } from "@/config/site";
 import { cn } from "@/lib/utils";
-import { CtaLink } from "./cta-link";
 import { RecordPaths } from "./record-paths";
 import { SectionHeading } from "./section-heading";
 
@@ -35,22 +34,32 @@ const STEPS: Step[] = [
   },
 ];
 
+const INTERVAL_MS = 4000;
+
 export function HowItWorks() {
   const [active, setActive] = useState(0);
-  const stepRefs = useRef<(HTMLLIElement | null)[]>([]);
+  const [dir, setDir] = useState(1);
+  const [paused, setPaused] = useState(false);
+  const pausedRef = useRef(false);
+  pausedRef.current = paused;
+
+  const go = useCallback((next: number) => {
+    const n = (next + STEPS.length) % STEPS.length;
+    setDir(n === (active + 1) % STEPS.length ? 1 : -1);
+    setActive(n);
+  }, [active]);
 
   useEffect(() => {
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting) setActive(Number((e.target as HTMLElement).dataset.step));
-        }
-      },
-      { rootMargin: "-50% 0px -50% 0px" },
-    );
-    stepRefs.current.forEach((el) => el && io.observe(el));
-    return () => io.disconnect();
-  }, []);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const id = window.setInterval(() => {
+      if (pausedRef.current) return;
+      setDir(1);
+      setActive((i) => (i + 1) % STEPS.length);
+    }, INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, [active]);
+
+  const step = STEPS[active];
 
   return (
     <section
@@ -67,88 +76,108 @@ export function HowItWorks() {
           description="빈 문서 앞에서 고민하는 대신, 오늘 남긴 사진과 메모로 초안을 만들고 선생님은 확인과 수정에 집중해요."
         />
 
-        <div className="mt-14 lg:mt-20 lg:grid lg:grid-cols-12 lg:gap-6">
-          <ol className="space-y-14 lg:motion-safe:col-span-5 lg:motion-safe:space-y-0 lg:motion-reduce:col-span-12 lg:motion-reduce:space-y-20">
-            {STEPS.map((step, i) => (
-              <li
-                key={step.title}
-                ref={(el) => {
-                  stepRefs.current[i] = el;
-                }}
-                data-step={i}
-                className="lg:motion-safe:flex lg:motion-safe:min-h-[72vh] lg:motion-safe:items-center lg:motion-reduce:grid lg:motion-reduce:grid-cols-12 lg:motion-reduce:items-center lg:motion-reduce:gap-6"
+        <div
+          className="mt-10 grid items-center gap-10 lg:mt-14 lg:grid-cols-12 lg:gap-8"
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+        >
+          <div className="lg:col-span-5">
+            <p className="text-small font-semibold text-ink-600">
+              {active + 1} / {STEPS.length}
+            </p>
+            <div className="mt-4 min-h-[168px] overflow-hidden">
+              <div
+                key={active}
+                className={cn(
+                  "animate-in fade-in duration-700 fill-mode-both motion-reduce:animate-none",
+                  dir > 0 ? "slide-in-from-right-5" : "slide-in-from-left-5",
+                )}
               >
-                <div
-                  className={cn(
-                    "group max-w-[440px] transition-colors duration-300 lg:motion-safe:border-l-2 lg:motion-safe:pl-7 lg:motion-reduce:col-span-5",
-                    active === i ? "is-active lg:motion-safe:border-brand-600" : "lg:motion-safe:border-border-default",
-                  )}
-                >
-                  <p className="flex items-center gap-2">
-                    <span className="flex size-8 items-center justify-center rounded-full bg-brand-050 text-[14px] font-bold text-brand-700">
-                      {i + 1}
-                    </span>
-                    {step.badge && (
-                      <span className="rounded-(--radius-tag) border border-border-default bg-surface-base px-2 py-0.5 text-[12px] font-semibold text-ink-600">
-                        {step.badge}
-                      </span>
-                    )}
-                  </p>
-                  <h3 className="text-h2 mt-4 text-ink-900 transition-colors duration-300 lg:motion-safe:text-ink-600 lg:motion-safe:group-[.is-active]:text-ink-900">
-                    {step.title}
-                  </h3>
-                  <p className="text-body mt-3 text-ink-600">{step.body}</p>
-                </div>
-                <div className="mt-7 lg:motion-safe:hidden lg:motion-reduce:col-span-7 lg:motion-reduce:mt-0">
-                  {step.screen("min-h-[340px]")}
-                </div>
-              </li>
-            ))}
-          </ol>
-
-          <div className="hidden lg:motion-safe:col-span-7 lg:motion-safe:block">
-            <div className="sticky top-[calc(var(--header-h)+56px)]">
-              <div className="relative h-[520px]">
-                {STEPS.map((step, i) => (
-                  <div
-                    key={step.title}
-                    aria-hidden={active !== i}
-                    className={cn(
-                      "absolute inset-0 transition-[opacity,transform] duration-[350ms] ease-out",
-                      active === i ? "opacity-100" : "pointer-events-none translate-y-3 opacity-0",
-                    )}
-                  >
-                    {step.screen("h-full")}
-                  </div>
-                ))}
+                <StepCopy step={step} index={active} />
               </div>
-              <div className="mt-6 flex items-center gap-2" aria-hidden>
+            </div>
+            <div className="mt-8 flex items-center gap-3">
+              <button
+                type="button"
+                className="focus-ring inline-flex size-11 items-center justify-center rounded-full border border-border-default bg-surface-base text-ink-900 hover:bg-surface-cool"
+                aria-label="이전 단계"
+                onClick={() => go(active - 1)}
+              >
+                <ChevronLeft className="size-5" aria-hidden />
+              </button>
+              <button
+                type="button"
+                className="focus-ring inline-flex size-11 items-center justify-center rounded-full border border-border-default bg-surface-base text-ink-900 hover:bg-surface-cool"
+                aria-label="다음 단계"
+                onClick={() => go(active + 1)}
+              >
+                <ChevronRight className="size-5" aria-hidden />
+              </button>
+              <div className="ml-2 flex gap-1.5" role="tablist" aria-label="사용 방법 단계">
                 {STEPS.map((s, i) => (
-                  <span
+                  <button
                     key={s.title}
+                    type="button"
+                    role="tab"
+                    aria-selected={active === i}
+                    aria-label={`${i + 1}단계. ${s.title}`}
                     className={cn(
                       "h-1.5 rounded-full transition-all duration-300",
-                      active === i ? "w-10 bg-brand-600" : "w-4 bg-border-default",
+                      active === i ? "w-10 bg-brand-600" : "w-4 bg-border-default hover:bg-ink-600",
                     )}
+                    onClick={() => go(i)}
                   />
                 ))}
-                <span className="text-small ml-2 text-ink-600">
-                  {active + 1} / {STEPS.length}
-                </span>
               </div>
             </div>
           </div>
+
+          <div
+            className="relative min-h-[360px] min-w-0 overflow-hidden lg:col-span-7 lg:min-h-[480px]"
+            role="region"
+            aria-label="사용 방법 화면"
+          >
+            {STEPS.map((s, i) => (
+              <div
+                key={s.title}
+                className={cn(
+                  "absolute inset-0 transition-[opacity,transform] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+                  i === active
+                    ? "z-10 translate-x-0 opacity-100"
+                    : cn(
+                        "pointer-events-none z-0 opacity-0",
+                        dir > 0 ? "translate-x-8" : "-translate-x-8",
+                      ),
+                )}
+                aria-hidden={i !== active}
+              >
+                {s.screen("h-full min-h-[360px] lg:min-h-[480px]")}
+              </div>
+            ))}
+          </div>
         </div>
 
-        <RecordPaths className="mt-20 lg:mt-28" />
-
-        <div className="mt-12 flex justify-center">
-          <CtaLink href={`#${SECTION_IDS.features}`} variant="secondary">
-            주요 기능 보기
-            <ArrowDown aria-hidden className="size-[18px]" />
-          </CtaLink>
-        </div>
+        <RecordPaths className="mt-14 lg:mt-16" />
       </div>
     </section>
+  );
+}
+
+function StepCopy({ step, index }: { step: Step; index: number }) {
+  return (
+    <>
+      <p className="flex items-center gap-2">
+        <span className="flex size-8 items-center justify-center rounded-full bg-brand-050 text-[14px] font-bold text-brand-700">
+          {index + 1}
+        </span>
+        {step.badge && (
+          <span className="rounded-(--radius-tag) border border-border-default bg-surface-base px-2 py-0.5 text-[12px] font-semibold text-ink-600">
+            {step.badge}
+          </span>
+        )}
+      </p>
+      <h3 className="text-h2 mt-4 text-ink-900">{step.title}</h3>
+      <p className="text-body mt-3 max-w-[28em] text-ink-600">{step.body}</p>
+    </>
   );
 }
